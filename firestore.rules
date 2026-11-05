@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'pricedianaj@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Validation Helpers ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'role']) &&
+        data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'role', 'phone', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 255 &&
+        data.role in ['user', 'admin'] &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32));
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['id', 'userId', 'patientName', 'phone', 'serviceName', 'preferredDate', 'preferredTime', 'status']) &&
+        data.keys().hasOnly(['id', 'userId', 'patientName', 'phone', 'serviceCategory', 'serviceName', 'preferredDate', 'preferredTime', 'specialistPreference', 'symptoms', 'status', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.patientName is string && data.patientName.size() > 0 && data.patientName.size() <= 128 &&
+        data.phone is string && data.phone.size() > 0 && data.phone.size() <= 32 &&
+        data.serviceName is string && data.serviceName.size() <= 128 &&
+        data.preferredDate is string && data.preferredDate.size() <= 32 &&
+        data.preferredTime is string && data.preferredTime.size() <= 32 &&
+        data.status in ['Confirmed', 'Pending Review', 'Completed', 'Cancelled'] &&
+        (!('symptoms' in data) || (data.symptoms is string && data.symptoms.size() <= 500));
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'authorName', 'rating', 'serviceCategory', 'text']) &&
+        data.keys().hasOnly(['id', 'authorId', 'authorName', 'authorLocation', 'rating', 'serviceCategory', 'text', 'highlight', 'verified', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 128 &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.serviceCategory in ['dental', 'physio'] &&
+        data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+        (!('highlight' in data) || (data.highlight is string && data.highlight.size() <= 150));
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Users
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user';
+      allow update: if isValidId(userId) && (
+        isAdmin() ||
+        (isOwner(userId) && isValidUser(incoming()) && incoming().role == existing().role && incoming().email == existing().email)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Appointments
+    match /appointments/{appointmentId} {
+      allow get: if isValidId(appointmentId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isValidId(appointmentId) && isSignedIn() && isValidAppointment(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isValidId(appointmentId) && isSignedIn() && (
+        isAdmin() ||
+        (existing().userId == request.auth.uid && incoming().userId == existing().userId && isValidAppointment(incoming()))
+      );
+      allow delete: if isValidId(appointmentId) && isAdmin();
+    }
+
+    // 3. Reviews (Public read, verified patient write)
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isValidId(reviewId) && isSignedIn() && isValidReview(incoming()) && (incoming().authorId == request.auth.uid || isAdmin());
+      allow update, delete: if isValidId(reviewId) && (isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid));
+    }
+
+    // 4. Admins collection
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

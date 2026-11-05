@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with role-based access control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 255 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "phone": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "Appointment": {
+      "title": "Appointment Booking",
+      "description": "Scheduled clinic appointments for dental or physiotherapy consultations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "patientName": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "serviceCategory": { "type": "string", "maxLength": 64 },
+        "serviceName": { "type": "string", "maxLength": 128 },
+        "preferredDate": { "type": "string", "maxLength": 32 },
+        "preferredTime": { "type": "string", "maxLength": 32 },
+        "specialistPreference": { "type": "string", "maxLength": 128 },
+        "symptoms": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["Confirmed", "Pending Review", "Completed", "Cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "patientName", "phone", "serviceName", "preferredDate", "preferredTime", "status"]
+    },
+    "Review": {
+      "title": "Patient Review",
+      "description": "Patient feedback and clinical testimonial",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 128 },
+        "authorLocation": { "type": "string", "maxLength": 128 },
+        "rating": { "type": "number" },
+        "serviceCategory": { "type": "string", "enum": ["dental", "physio"] },
+        "text": { "type": "string", "maxLength": 1000 },
+        "highlight": { "type": "string", "maxLength": 150 },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "authorName", "rating", "serviceCategory", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile store for authenticated accounts"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Booked patient consultations"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Verified patient reviews and testimonials"
+    }
+  }
+}

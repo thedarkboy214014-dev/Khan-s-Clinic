@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var fetchHolder = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return fetchHolder;
+            },
+            set: function(val) {
+              fetchHolder = val;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {}
+
+        window.addEventListener('error', function(event) {
+          if (event && event.message && event.message.indexOf('fetch') !== -1 && event.message.indexOf('getter') !== -1) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event && event.reason;
+          if (reason) {
+            var code = reason.code || '';
+            var msg = reason.message || (typeof reason === 'string' ? reason : '');
+            if (
+              code === 'auth/popup-closed-by-user' ||
+              code === 'auth/cancelled-popup-request' ||
+              code === 'auth/popup-blocked' ||
+              msg.indexOf('popup-closed-by-user') !== -1 ||
+              msg.indexOf('cancelled-popup-request') !== -1
+            ) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              return true;
+            }
+          }
+        }, true);
+      })();
+    </script>
+    <title>Khan Dental & Physiotherapy Centre | Boutique Dental & Rehab Clinic Dhaka</title>
+    <meta name="description" content="Experience state-of-the-art dental care and physiotherapy in Sayed Nagar, Vatara, Dhaka. Modern, pain-free cosmetic dentistry, implants, and rehabilitation." />
+    <meta property="og:title" content="Khan Dental & Physiotherapy Centre | Boutique Dental & Rehab Clinic Dhaka" />
+    <meta property="og:description" content="Experience state-of-the-art dental care and physiotherapy in Sayed Nagar, Vatara, Dhaka. Modern, pain-free cosmetic dentistry, implants, and rehabilitation." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#D4AF37]/20 selection:text-[#0F172A]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,7 @@
+{
+  "name": "Khan Dental & Physiotherapy Centre",
+  "description": "Modern boutique dental clinic and specialized physiotherapy centre in Sayed Nagar, Vatara, Dhaka. Pain-free cosmetic dentistry, orthodontics, and rehabilitation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
